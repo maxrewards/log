@@ -3,6 +3,7 @@ import { v4 } from 'uuid';
 
 interface WLogger extends WinstonLogger {
   id?: string;
+  serviceName?: string;
 }
 
 export default class Logger {
@@ -40,7 +41,7 @@ export default class Logger {
 
   public create = (userId?: string, otherOpts?: { [key: string]: string | number | boolean }, ingestId?: string) => {
     let options: { reqId: string, [key: string]: any } = { reqId: ingestId ? ingestId : v4() };
-    
+
     if(userId) {
       options.userId = userId;
     }
@@ -50,7 +51,8 @@ export default class Logger {
     }
 
     const childLogger: WLogger = this.logger.child(options);
-    childLogger.id = `${this.applicationName}:${options.reqId}`;
+    childLogger.id = options.reqId;
+    childLogger.serviceName = this.applicationName;
 
     return childLogger;
   }
