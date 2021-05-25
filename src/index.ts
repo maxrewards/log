@@ -41,7 +41,7 @@ export default class Logger {
     }
 
     if(otherOpts && typeof otherOpts === 'object') {
-      options = { ...options, otherOpts };
+      options = { ...options, ...otherOpts };
     }
 
     return this.logger.child(options);
