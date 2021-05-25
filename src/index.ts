@@ -1,6 +1,10 @@
 import { createLogger, format, transports, Logger as WinstonLogger, LoggerOptions } from 'winston';
 import { v4 } from 'uuid';
 
+interface WLogger extends WinstonLogger {
+  id?: string;
+}
+
 export default class Logger {
   applicationName: string;
   apiKey: string;
@@ -34,8 +38,9 @@ export default class Logger {
     });
   }
 
-  public create = (userId?: string, otherOpts?: { [key: string]: string | number | boolean }) => {
-    let options: any = { reqId: v4() };
+  public create = (userId?: string, otherOpts?: { [key: string]: string | number | boolean }, ingestId?: string) => {
+    let options: { reqId: string, [key: string]: any } = { reqId: ingestId ? ingestId : v4() };
+    
     if(userId) {
       options.userId = userId;
     }
@@ -44,6 +49,9 @@ export default class Logger {
       options = { ...options, ...otherOpts };
     }
 
-    return this.logger.child(options);
+    const childLogger: WLogger = this.logger.child(options);
+    childLogger.id = `${this.applicationName}:${options.reqId}`;
+
+    return childLogger;
   }
 }
