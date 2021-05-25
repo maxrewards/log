@@ -16,8 +16,8 @@ export default class Logger {
     this.apiKey = apiKey;
 
     const httpTransport = new transports.Http({
-      handleExceptions: true,
-      handleRejections: true,
+      handleExceptions: overrideTransport ? false : true,
+      handleRejections: overrideTransport ? false : true,
       host: 'http-intake.logs.datadoghq.com',
       path: `/v1/input/${apiKey}?ddsource=nodejs&service=${applicationName}`
     });
