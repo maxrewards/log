@@ -34,11 +34,16 @@ export default class Logger {
     });
   }
 
-  public create = (userId?: string) => {
-    const options: any = { reqId: v4() };
+  public create = (userId?: string, otherOpts?: { [key: string]: string | number | boolean }) => {
+    let options: any = { reqId: v4() };
     if(userId) {
       options.userId = userId;
     }
+
+    if(otherOpts && typeof otherOpts === 'object') {
+      options = { ...options, otherOpts };
+    }
+
     return this.logger.child(options);
   }
 }
