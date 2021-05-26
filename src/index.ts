@@ -64,14 +64,21 @@ export default class Logger {
 
   public destroy = (ingestId?: string): boolean => {
     try {
-      const logger = this.childLoggers.find(logger => logger.id === ingestId);
-      if(logger) {
-        logger.on('finish', () => {
-          logger.end();
-        });
+      const keep = [];
+      for(let i = 0; i < this.childLoggers.length; i++) {
+        const logger = this.childLoggers[i];
+        if(logger.id === ingestId) {
+          logger.on('finish', () => {
+            logger.end();
+          });
+        } else {
+          keep.push(logger);
+        }
       }
-      this.childLoggers = this.childLoggers.filter(logger => logger.id !== ingestId);
+  
+      this.childLoggers = keep;
     } catch(e) {
+      this.logger.error(e);
       return false;
     }
     return true;
