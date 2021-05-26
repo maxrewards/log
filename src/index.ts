@@ -10,6 +10,7 @@ export default class Logger {
   applicationName: string;
   apiKey: string;
   logger: WinstonLogger;
+  childLoggers: WLogger[];
 
   constructor(applicationName: string, apiKey: string, options?: LoggerOptions, overrideTransport?: boolean) {
     this.applicationName = applicationName;
@@ -37,9 +38,11 @@ export default class Logger {
       transports: transport,
       ...options
     });
+
+    this.childLoggers = [];
   }
 
-  public create = (userId?: string, otherOpts?: { [key: string]: string | number | boolean }, ingestId?: string) => {
+  public create = (userId?: string, otherOpts?: { [key: string]: string | number | boolean }, ingestId?: string): WLogger => {
     let options: { reqId: string, [key: string]: any } = { reqId: ingestId ? ingestId : v4() };
 
     if(userId) {
@@ -54,6 +57,23 @@ export default class Logger {
     childLogger.id = options.reqId;
     childLogger.serviceName = this.applicationName;
 
+    this.childLoggers.push(childLogger);
+
     return childLogger;
+  }
+
+  public destroy = (ingestId?: string): boolean => {
+    try {
+      const logger = this.childLoggers.find(logger => logger.id === ingestId);
+      if(logger) {
+        logger.on('finish', () => {
+          logger.end();
+        });
+      }
+      this.childLoggers = this.childLoggers.filter(logger => logger.id !== ingestId);
+    } catch(e) {
+      return false;
+    }
+    return true;
   }
 }
