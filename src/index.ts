@@ -21,7 +21,7 @@ export default class Logger {
   public warn: LeveledLogMethod;
   public debug: LeveledLogMethod;
   public stream: (options?: any) => NodeJS.ReadableStream;
-  
+
   childLoggers: WLogger[];
   transports: (HttpTransportInstance | ConsoleTransportInstance)[];
 
@@ -35,13 +35,23 @@ export default class Logger {
       host: 'http-intake.logs.datadoghq.com',
       path: `/v1/input/${apiKey}?ddsource=nodejs&service=${applicationName}`
     };
-    if(transportOptions && transportOptions.http && typeof transportOptions.http === 'object') {
-      httpTransportOptions = { ...httpTransportOptions, ...transportOptions.http };
+
+    let consoleTransportOptions: ConsoleTransportOptions = {
+      format: format.printf(({ message }) => message)
+    };
+
+    if(transportOptions) {
+      if(transportOptions.http && typeof transportOptions.http === 'object') {
+        httpTransportOptions = { ...httpTransportOptions, ...transportOptions.http };
+      }
+      if(transportOptions.console && typeof transportOptions.console === 'object') {
+        consoleTransportOptions = { ...consoleTransportOptions, ...transportOptions.console };
+      }
     }
 
-    const httpTransport = new transports.Http();
+    const httpTransport = new transports.Http(httpTransportOptions);
 
-    const consoleTransport = new transports.Console({ format: format.printf(({ message }) => message) });
+    const consoleTransport = new transports.Console(consoleTransportOptions);
 
     const winstonTransports = (process.env.NODE_ENV && process.env.NODE_ENV.indexOf('prod') > -1) ? [httpTransport, consoleTransport] : [consoleTransport];
 
