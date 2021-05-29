@@ -1,5 +1,5 @@
-import { createLogger, format, transports, Logger as WinstonLogger, LoggerOptions } from 'winston';
-import { ConsoleTransportInstance, HttpTransportInstance } from 'winston/lib/winston/transports';
+import { createLogger, format, transports, Logger as WinstonLogger, LoggerOptions, LeveledLogMethod } from 'winston';
+import { ConsoleTransportInstance, ConsoleTransportOptions, HttpTransportInstance, HttpTransportOptions } from 'winston/lib/winston/transports';
 import { v4 } from 'uuid';
 
 interface WLogger extends WinstonLogger {
@@ -7,23 +7,39 @@ interface WLogger extends WinstonLogger {
   serviceName?: string;
 }
 
+interface TransportOptions {
+  http: Partial<HttpTransportOptions>;
+  console: Partial<ConsoleTransportOptions>;
+}
+
 export default class Logger {
-  applicationName: string;
-  apiKey: string;
-  logger: WinstonLogger;
+  public applicationName: string;
+  public apiKey: string;
+  public logger: WinstonLogger;
+  public info: LeveledLogMethod;
+  public error: LeveledLogMethod;
+  public warn: LeveledLogMethod;
+  public debug: LeveledLogMethod;
+  public stream: (options?: any) => NodeJS.ReadableStream;
+  
   childLoggers: WLogger[];
   transports: (HttpTransportInstance | ConsoleTransportInstance)[];
 
-  constructor(applicationName: string, apiKey: string, options?: LoggerOptions, overrideTransport?: boolean) {
+  constructor(applicationName: string, apiKey: string, options?: LoggerOptions, overrideTransport?: boolean, transportOptions?: TransportOptions) {
     this.applicationName = applicationName;
     this.apiKey = apiKey;
 
-    const httpTransport = new transports.Http({
+    let httpTransportOptions: HttpTransportOptions = {
       handleExceptions: overrideTransport ? false : true,
       handleRejections: overrideTransport ? false : true,
       host: 'http-intake.logs.datadoghq.com',
       path: `/v1/input/${apiKey}?ddsource=nodejs&service=${applicationName}`
-    });
+    };
+    if(transportOptions && transportOptions.http && typeof transportOptions.http === 'object') {
+      httpTransportOptions = { ...httpTransportOptions, ...transportOptions.http };
+    }
+
+    const httpTransport = new transports.Http();
 
     const consoleTransport = new transports.Console({ format: format.printf(({ message }) => message) });
 
@@ -40,6 +56,12 @@ export default class Logger {
     });
 
     this.childLoggers = [];
+
+    this.info = this.logger.info;
+    this.error = this.logger.error;
+    this.warn = this.logger.warn;
+    this.debug = this.logger.debug;
+    this.stream = this.logger.stream;
   }
 
   public create = (userId?: string, otherOpts?: { [key: string]: string | number | boolean }, ingestId?: string): WLogger => {
