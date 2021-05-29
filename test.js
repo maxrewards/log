@@ -1,3 +1,5 @@
 const DDL = require('./lib/index').default;
 
-console.log(new DDL('test', 'test').transports.length);
+const appName = '';
+const options = [{}, false];
+const logger = new DDL(appName, process.env.API_KEY, ...options);
