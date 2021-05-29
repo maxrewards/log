@@ -1,12 +1,15 @@
 {
   "name": "@maxrewards/log",
-  "version": "0.1.2",
+  "version": "0.2.0",
   "description": "Generic winston log wrapper for use in all MaxRewards repos",
   "main": "lib/index.js",
   "scripts": {
     "test": "jest --config jestconfig.json",
     "build": "tsc",
-    "prepare": "npm run build"
+    "prepare": "npm run build",
+    "postinstall": "patch-package",
+    "local": "npm run build && node test.js",
+    "local-prod": "npm run build && cross-env NODE_ENV=production node test.js"
   },
   "repository": {
     "type": "git",
@@ -25,6 +28,7 @@
   "devDependencies": {
     "@types/jest": "^26.0.23",
     "@types/uuid": "^8.3.0",
+    "cross-env": "^7.0.3",
     "jest": "^27.0.1",
     "patch-package": "^6.4.7",
     "ts-jest": "^26.5.6",
