@@ -1,4 +1,5 @@
 import { createLogger, format, transports, Logger as WinstonLogger, LoggerOptions } from 'winston';
+import { ConsoleTransportInstance, HttpTransportInstance } from 'winston/lib/winston/transports';
 import { v4 } from 'uuid';
 
 interface WLogger extends WinstonLogger {
@@ -11,6 +12,7 @@ export default class Logger {
   apiKey: string;
   logger: WinstonLogger;
   childLoggers: WLogger[];
+  transports: (HttpTransportInstance | ConsoleTransportInstance)[];
 
   constructor(applicationName: string, apiKey: string, options?: LoggerOptions, overrideTransport?: boolean) {
     this.applicationName = applicationName;
@@ -23,19 +25,17 @@ export default class Logger {
       path: `/v1/input/${apiKey}?ddsource=nodejs&service=${applicationName}`
     });
 
-    const consoleTransport = new transports.Console({ format: format.simple() });
+    const consoleTransport = new transports.Console({ format: format.printf(({ message }) => message) });
 
-    const transport = (process.env.NODE_ENV === 'production')
-      ? [httpTransport]
-      : overrideTransport
-        ? [httpTransport, consoleTransport]
-        : [consoleTransport];
+    const winstonTransports = (process.env.NODE_ENV && process.env.NODE_ENV.indexOf('prod') > -1) ? [httpTransport, consoleTransport] : [consoleTransport];
+
+    this.transports = winstonTransports;
 
     this.logger = createLogger({
       level: 'info',
       exitOnError: false,
       format: format.json(),
-      transports: transport,
+      transports: winstonTransports,
       ...options
     });
 
