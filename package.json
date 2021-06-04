@@ -1,6 +1,6 @@
 {
   "name": "@maxrewards/log",
-  "version": "0.2.3",
+  "version": "0.2.5",
   "description": "Generic winston log wrapper for use in all MaxRewards repos",
   "main": "lib/index.js",
   "scripts": {
@@ -12,14 +12,14 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/maxrewards/console.log.git"
+    "url": "git+https://github.com/maxrewards/log.git"
   },
   "author": "Ibrahim Saberi",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/maxrewards/console.log/issues"
+    "url": "https://github.com/maxrewards/log/issues"
   },
-  "homepage": "https://github.com/maxrewards/console.log#readme",
+  "homepage": "https://github.com/maxrewards/log#readme",
   "dependencies": {
     "uuid": "^8.3.2",
     "winston": "^3.3.3"
