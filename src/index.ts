@@ -13,14 +13,10 @@ interface TransportOptions {
 }
 
 export default class Logger {
+  public DEBUG_MODE: boolean = Boolean(process.env.DEBUG_LOG);
   public applicationName: string;
   public apiKey: string;
   public logger: WinstonLogger;
-  public info: LeveledLogMethod;
-  public error: LeveledLogMethod;
-  public warn: LeveledLogMethod;
-  public debug: LeveledLogMethod;
-  public stream: (options?: any) => NodeJS.ReadableStream;
 
   childLoggers: WLogger[];
   transports: (HttpTransportInstance | ConsoleTransportInstance)[];
@@ -30,14 +26,20 @@ export default class Logger {
     this.apiKey = apiKey;
 
     let httpTransportOptions: HttpTransportOptions = {
-      handleExceptions: overrideTransport ? false : true,
-      handleRejections: overrideTransport ? false : true,
+      handleExceptions: !overrideTransport,
+      handleRejections: !overrideTransport,
       host: 'http-intake.logs.datadoghq.com',
-      path: `/v1/input/${apiKey}?ddsource=nodejs&service=${applicationName}`
+      path: `/v1/input/${apiKey}?ddsource=nodejs&service=${applicationName}`,
     };
 
     let consoleTransportOptions: ConsoleTransportOptions = {
-      format: format.printf(({ message }) => message)
+      format: format.combine(format.printf(({ message, level, stack }) => {
+        if(level === 'error') {
+          return stack;
+        } else {
+          return message;
+        }
+      }))
     };
 
     if(transportOptions) {
@@ -53,25 +55,22 @@ export default class Logger {
 
     const consoleTransport = new transports.Console(consoleTransportOptions);
 
-    const winstonTransports = (process.env.NODE_ENV && process.env.NODE_ENV.indexOf('prod') > -1) ? [httpTransport, consoleTransport] : [consoleTransport];
+    const winstonTransports = ((process.env.NODE_ENV && process.env.NODE_ENV.indexOf('prod') > -1) || overrideTransport) ? [httpTransport, consoleTransport] : [consoleTransport];
 
     this.transports = winstonTransports;
 
     this.logger = createLogger({
       level: 'info',
       exitOnError: false,
-      format: format.json(),
+      format: format.combine(
+        format.errors({ stack: true }),
+        format.json()
+      ),
       transports: winstonTransports,
       ...options
     });
 
     this.childLoggers = [];
-
-    this.info = this.logger.info;
-    this.error = this.logger.error;
-    this.warn = this.logger.warn;
-    this.debug = this.logger.debug;
-    this.stream = this.logger.stream;
   }
 
   public create = (userId?: string, otherOpts?: { [key: string]: string | number | boolean }, ingestId?: string): WLogger => {
@@ -107,7 +106,7 @@ export default class Logger {
           keep.push(logger);
         }
       }
-  
+
       this.childLoggers = keep;
     } catch(e) {
       this.logger.error(e);
